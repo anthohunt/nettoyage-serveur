@@ -1,0 +1,9 @@
+[Unit]
+Description=Nettoyage du serveur : passe de nuit a 02h (heure du serveur)
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,12 @@
+[Unit]
+Description=Page « Nettoyage » du serveur (lecture seule, 127.0.0.1:7965)
+After=network-online.target
+
+[Service]
+User=root
+ExecStart=/usr/bin/python3 -B /usr/local/lib/nettoyage-serveur/serveur.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

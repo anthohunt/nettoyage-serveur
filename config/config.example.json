@@ -1,0 +1,9 @@
+{
+  "archives": "/var/lib/nettoyage-serveur/archives",
+  "retention_jours": 183,
+  "plans": "/etc/nettoyage-serveur/plans",
+  "racines": [["/home", 1], ["/root", 1], ["/srv", 1], ["/opt", 1], ["/var/lib", 1], ["/usr/local/lib", 1], ["/tmp", 0], ["/var/log", 0]],
+  "seuil_liste_mo": 100,
+  "interdits_en_plus": [],
+  "commande_signalement": []
+}

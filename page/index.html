@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nettoyage</title><link rel="stylesheet" href="style.css">
+<style>
+:root{--muted:#6f6e69}
+.wrap{max-width:720px}
+h1{font-size:28px;margin:0 0 4px}
+h2{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:28px 0 6px}
+.onglets{display:flex;gap:4px;margin:14px 0 0;border-bottom:1px solid var(--line)}
+.onglets button{font:inherit;font-size:15px;padding:8px 14px;border:0;border-bottom:2px solid transparent;background:none;color:var(--text2);cursor:pointer;margin-bottom:-1px}
+.onglets button.on{border-bottom-color:#37352f;color:inherit;font-weight:600}
+.el{border-bottom:1px solid var(--line)}
+.ligne{display:flex;align-items:baseline;gap:10px;padding:12px 2px;cursor:pointer;width:100%;border:0;background:none;font:inherit;color:inherit;text-align:left}
+.ligne:hover{background:var(--hover)}
+.ligne .t{flex:1;font-size:15px;font-weight:600}
+.ligne .v{white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--text2);font-size:14px}
+.tag{margin-left:6px;font-weight:500}
+.detail{padding:0 2px 14px}
+.detail p{margin:0 0 10px;font-size:14px;line-height:1.5;color:var(--text2)}
+.item{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.item .q{flex:1}
+.item .q small{display:block;color:var(--muted);font-size:12px;margin-top:2px;overflow-wrap:anywhere}
+.item .c{white-space:nowrap;color:var(--text2)}
+.vide{color:var(--text2);font-size:14px}
+.alerte{color:var(--rd-fg)}
+@media (max-width:640px){.wrap{padding:24px 16px 40px}.item{flex-wrap:wrap}.item .c{width:100%}}
+</style></head><body>
+<div class="wrap">
+  <h1>Nettoyage</h1>
+  <p class="sub" id="sous" style="margin-top:12px"></p>
+  <h2>Plan de ménage</h2><div id="plan"></div>
+  <h2 id="t-voir">Hors plan</h2><div id="voir"></div>
+  <h2>Derniers ménages</h2><div id="journal"></div>
+</div>
+<script>
+let D={}, machine="vps", ouverts=new Set();
+const $=s=>document.querySelector(s);
+const go=o=>o==null?"":o>=1e9?(o/1e9).toFixed(1).replace(".",",")+" Go":o>=1e6?Math.round(o/1e6)+" Mo":"< 1 Mo";
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const quand=d=>d?new Date(d).toLocaleString("fr-FR",{day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+const court=c=>c==="docker:images-inutilisees"?"Images Docker non utilisées":String(c);
+const ETATS={"vivant":'<span class="tag gr">vivant</span>',"en-pause":'<span class="tag yl">en pause</span>',"fini":'<span class="tag pu">fini</span>'};
+function consigne(e){return {garder:"Gardé",archiver:"Archivé puis effacé, une fois",supprimer:"Effacé une fois, sans archive",
+  vider:`Vidé tous les ${e.jours} jours${e.archive===false?", sans archive":", avec archive"}`}[e.consigne]||e.consigne}
+function bloc(id,titre,droite,corps){const o=ouverts.has(id);
+  return `<div class="el"><button class="ligne" data-o="${esc(id)}" aria-expanded="${o}"><span class="t">${titre}</span><span class="v">${droite}</span></button>${o?`<div class="detail">${corps}</div>`:""}</div>`}
+function rendre(){
+  const m=D[machine]||{}, dk=m.disque||{}, mn=m.menage||{};
+  $("#sous").innerHTML=(dk.total?`Disque ${Math.round(dk.utilise/dk.total*100)} % · ${go(dk.libre)} libres`:"Pas encore d'inventaire")+
+    (mn.date?` · dernier ménage ${quand(mn.date)}`+(mn.ok===false?` <span class="alerte">(échec)</span>`:""):"");
+  const svc=((m.plan||{}).services||[]).slice().sort((a,b)=>(b.taille||0)-(a.taille||0));
+  $("#plan").innerHTML=svc.length?svc.map(s=>bloc("s:"+s.id,esc(s.nom)+(ETATS[s.etat]||""),go(s.taille),
+     `<p>${esc(s.role)}</p>`+s.elements.map(e=>`<div class="item"><div class="q">${esc(e.quoi)}<small>${esc(court(e.id))}${e.dernier?" · "+esc(e.dernier.message):""}</small></div>
+       <div class="c">${consigne(e)}${e.taille!=null?" · "+go(e.taille):""}</div></div>`).join(""))).join("")
+    :`<p class="vide">Pas encore de plan. Il s\'écrit avec <code>plan.py</code> pendant un état des lieux (voir le README).</p>`;
+  const v=(m.a_voir||{}).elements||[], tot=v.reduce((s,x)=>s+(x.taille||0),0);
+  $("#t-voir").textContent=`Hors plan${v.length?" · "+go(tot):""}`;
+  $("#voir").innerHTML=v.length?bloc("voir",`${v.length} élément${v.length>1?"s":""} que le plan ne couvre pas`,"",
+     `<p>Le ménage n'y touche pas. Ils seront vus au prochain état des lieux (<code>plan.py a-voir</code>).</p>`+
+     v.map(x=>`<div class="item"><div class="q">${esc(court(x.id))}</div><div class="c">${go(x.taille)}</div></div>`).join(""))
+    :`<p class="vide">${(m.a_voir||{}).date?"Tout est couvert par le plan.":"Calculé au premier ménage."}</p>`;
+  const j=m.journal||[];
+  $("#journal").innerHTML=j.length?j.map((x,i)=>{const a=(x.actions||[]);
+     return bloc("j:"+i,quand(x.date),a.length?`${a.length} action${a.length>1?"s":""}${x.bloques?` · <span class="alerte">${x.bloques} bloquée${x.bloques>1?"s":""}</span>`:""}`:"rien à faire",
+       a.length?a.map(y=>`<div class="item"><div class="q">${esc(court(y.id))}<small>${esc(y.message)}</small></div><div class="c">${y.ok?"fait":'<span class="alerte">bloqué</span>'}</div></div>`).join(""):"<p>Aucune consigne n'était échue.</p>")}).join("")
+    :'<p class="vide">Aucun ménage encore.</p>';
+  document.querySelectorAll(".ligne").forEach(b=>b.onclick=()=>{const id=b.dataset.o; ouverts.has(id)?ouverts.delete(id):ouverts.add(id); rendre()});
+}
+async function charger(){try{D=await (await fetch("api/etat")).json()}catch(_){D={}; $("#sous").textContent="Serveur injoignable."} rendre()}
+charger();
+</script></body></html>

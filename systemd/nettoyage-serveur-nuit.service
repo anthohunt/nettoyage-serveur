@@ -1,0 +1,12 @@
+[Unit]
+Description=Menage du serveur (plan de menage) : inventaire, consignes echues, hors-plan, journal
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/usr/local/lib/nettoyage-serveur/nuit.sh
+Nice=19
+IOSchedulingClass=idle
+TimeoutStartSec=4h
