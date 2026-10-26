@@ -1,0 +1,4 @@
+# Nettoyage du serveur : ADMIN (a remplacer par votre compte ou celui de l'agent) peut appeler l'outil
+# d'effacement, qui n'applique que les regles du registre et du plan. Il ne peut pas ecrire le registre (root).
+# Rollback : rm /etc/sudoers.d/nettoyage-serveur
+ADMIN ALL=(root) NOPASSWD: /usr/local/sbin/nettoyer *
