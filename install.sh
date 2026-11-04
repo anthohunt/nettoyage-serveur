@@ -2,7 +2,7 @@
 # install.sh (root) : installe ou met a jour le nettoyage depuis ce depot.
 # Usage : sudo ./install.sh [COMPTE_ADMIN]   (le compte recoit le droit sudo d'appeler nettoyer et ecrit le plan)
 set -euo pipefail
-[ "$(id -u)" = 0 ] || { echo "a lancer en root (sudo)"; exit 1; }
+[ "$(id -u)" = 0 ] || { echo "run as root (sudo)"; exit 1; }
 D=$(cd "$(dirname "$0")" && pwd); ADMIN=${1:-}
 install -m 755 -o root -g root $D/nettoyer.py /usr/local/sbin/nettoyer
 # Ce que root execute vit dans une copie root : le depot peut appartenir a un autre compte.
@@ -24,5 +24,5 @@ command -v systemctl >/dev/null && [ -d /run/systemd/system ] && {
   systemctl daemon-reload
   systemctl enable --now nettoyage-serveur-nuit.timer
   systemctl enable nettoyage-serveur-page.service; systemctl restart nettoyage-serveur-page.service; } \
-  || echo "systemd absent : unites non activees (outil nettoyer installe)"
-echo "installe. Essai : sudo nettoyer inventaire && sudo nettoyer menage --essai"
+  || echo "systemd not found: units not enabled (nettoyer tool installed)"
+echo "installed. Try: sudo nettoyer inventaire && sudo nettoyer menage --essai"

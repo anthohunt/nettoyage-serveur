@@ -1,45 +1,49 @@
+**English** · [Français](README.fr.md)
+
 # nettoyage-serveur
 
-Un agent de ménage pour serveur Linux qui **n'efface que ce que vous avez autorisé**. Vous (ou votre assistant IA, en votre présence) faites un état des lieux : le disque est rangé par service, chaque élément reçoit une consigne (garder, archiver puis effacer, supprimer, vider tous les N jours). Une passe de nuit applique seulement ce plan, après avoir archivé et vérifié.
+A cleanup agent for Linux servers that **only deletes what you have authorised**. You (or your AI assistant, with you present) take stock: the disk is organised by service and each item gets an instruction (keep, archive then delete, delete, empty every N days). A nightly pass applies this plan and nothing else, after archiving and verifying.
 
-## Ce que contient le dépôt
-• `nettoyer.py` : l'outil d'effacement, le seul qui supprime. Inventaire, garde-fous, archivage vérifié, passe de ménage.
-• `plan.py` : écrit le plan de ménage (services, éléments, consignes). Il n'efface rien.
-• `serveur.py` et `page/` : une page web en lecture seule (plan, derniers ménages, ce qui reste hors plan).
-• `systemd/` : minuterie de nuit (02 h), service de la page, exemple de règle `sudoers`.
-• `tests/tests.sh` : les garde-fous et la restauration, sur de vrais outils.
-• `config/config.example.json`, `install.sh`.
+The commands, options and instructions are in French; the English meaning is given below.
 
-## Garde-fous
-• Aucun effacement sans règle dans le registre ou le plan ; `garder` et `verrou` sont refusés.
-• Chemins protégés codés en dur (système, `/etc`, dossiers personnels entiers, clés SSH, Docker brut…), extensibles par `interdits_en_plus`.
-• Refus si un processus utilise le chemin (dossier courant, fichier ouvert, ligne de commande) ou si une unité systemd ou une tâche cron active le cite.
-• Un élément qui contient un sous-élément « garder » est refusé : le plus précis l'emporte.
-• Archive `tar | zstd` envoyée par `rclone` (dossier local ou stockage distant), empreinte md5 comparée à l'arrivée, **puis seulement** effacement. Les archives sont gardées 183 jours puis supprimées. Restauration : `rclone cat <archive> | zstd -dc | tar -x -C /` (commande aussi écrite dans `archives.jsonl`).
-• Une consigne qui efface demande les mots du propriétaire (`--citation`) : c'est un garde-fou de comportement pour un assistant IA, pas une authentification. La vraie protection est le registre root et les chemins interdits.
+## What is in the repository
+- `nettoyer.py`: the deletion tool, the only one that deletes. Inventory, safeguards, verified archiving, cleanup pass.
+- `plan.py`: writes the cleanup plan (services, items, instructions). It deletes nothing.
+- `serveur.py` and `page/`: a read-only web page (plan, latest cleanups, what remains outside the plan).
+- `systemd/`: nightly timer (2 am), page service, sample `sudoers` rule.
+- `tests/tests.sh`: the safeguards and the restore, on real tools.
+- `config/config.example.json`, `install.sh`.
 
-## Installer
-Prérequis : Linux, Python 3.8+, `tar`, `zstd`, `rclone`, `du` ; Docker et systemd facultatifs.
+## Safeguards
+- No deletion without a rule in the registry or the plan; `garder` (keep) and `verrou` (lock) are refused.
+- Hard-coded protected paths (system, `/etc`, whole home folders, SSH keys, raw Docker…), extensible through `interdits_en_plus`.
+- Refusal if a process uses the path (current folder, open file, command line) or if an active systemd unit or cron job mentions it.
+- An item that contains a "keep" sub-item is refused: the most specific rule wins.
+- `tar | zstd` archive sent by `rclone` (local folder or remote storage), md5 checksum compared on arrival, and **only then** deletion. Archives are kept for 183 days, then deleted. Restore: `rclone cat <archive> | zstd -dc | tar -x -C /` (the command is also written in `archives.jsonl`).
+- An instruction that deletes requires the owner's words (`--citation`): this is a behavioural safeguard for an AI assistant, not authentication. The real protection is the root registry and the forbidden paths.
+
+## Install
+Requirements: Linux, Python 3.8+, `tar`, `zstd`, `rclone`, `du`; Docker and systemd optional.
 ```
-git clone <ce dépôt> && cd nettoyage-serveur
-sudo ./install.sh VOTRE_COMPTE
-sudoedit /etc/nettoyage-serveur/config.json     # dossier d'archives (ou « monremote:archives »)
+git clone <this repository> && cd nettoyage-serveur
+sudo ./install.sh YOUR_ACCOUNT
+sudoedit /etc/nettoyage-serveur/config.json     # archive folder (or "myremote:archives")
 sudo nettoyer inventaire
-sudo bash tests/tests.sh                          # vérifie les garde-fous sur des dossiers jetables
+sudo bash tests/tests.sh                          # checks the safeguards on disposable folders
 ```
-`install.sh` copie ce que root exécute dans `/usr/local/lib/nettoyage-serveur` et active la minuterie et la page (`http://127.0.0.1:7965`, sans authentification : accès par tunnel SSH ou VPN).
+`install.sh` copies what root runs to `/usr/local/lib/nettoyage-serveur` and enables the timer and the page (`http://127.0.0.1:7965`, no authentication: access through an SSH tunnel or a VPN).
 
-## Utiliser
+## Usage
 ```
-nettoyage-plan service --id blog --nom "Blog" --role "Site et ses caches" --etat vivant --citation "c'est mon blog"
-nettoyage-plan element --service blog --chemin /srv/blog/cache --quoi "Cache de pages" --consigne vider --jours 30 --citation "vide-le chaque mois"
-nettoyage-plan element --service blog --chemin /srv/blog/contenu --quoi "Articles" --consigne garder --citation "jamais"
-nettoyage-plan a-voir          # ce que l'inventaire montre et que le plan ne couvre pas
-nettoyage-plan essai           # ce que la prochaine passe ferait (à blanc)
+nettoyage-plan service --id blog --nom "Blog" --role "Site and its caches" --etat vivant --citation "this is my blog"
+nettoyage-plan element --service blog --chemin /srv/blog/cache --quoi "Page cache" --consigne vider --jours 30 --citation "empty it every month"
+nettoyage-plan element --service blog --chemin /srv/blog/contenu --quoi "Articles" --consigne garder --citation "never"
+nettoyage-plan a-voir          # what the inventory shows and the plan does not cover
+nettoyage-plan essai           # what the next pass would do (dry run)
 sudo nettoyer appliquer /srv/blog/cache --essai
 ```
-Consignes : `garder`, `archiver` (une fois, avec archive), `supprimer` (une fois, sans archive), `vider` (tous les N jours, avec ou sans archive ; pour `docker:images-inutilisees`, vide les images inutilisées).
-Arrêt : `systemctl disable --now nettoyage-serveur-nuit.timer nettoyage-serveur-page.service`.
+Instructions: `garder` (keep), `archiver` (once, with an archive), `supprimer` (delete once, no archive), `vider` (empty every N days, with or without an archive; for `docker:images-inutilisees`, removes unused images).
+Stop: `systemctl disable --now nettoyage-serveur-nuit.timer nettoyage-serveur-page.service`.
 
-## Licences
-Code : Apache 2.0 (`LICENSE`, `NOTICE`). Texte et documentation : CC BY 4.0 (`LICENSE-docs`). Aucune dépendance Python tierce ; programmes externes : tar, zstd (BSD/GPL), rclone (MIT), utilisés comme commandes séparées.
+## Licenses
+Code: Apache 2.0 (`LICENSE`, `NOTICE`). Text and documentation: CC BY 4.0 (`LICENSE-docs`). No third-party Python dependency; external programs: tar, zstd (BSD/GPL), rclone (MIT), used as separate commands.
