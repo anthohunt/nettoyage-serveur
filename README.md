@@ -1,5 +1,7 @@
 **English** · [Français](README.fr.md)
 
+**Anthony Hunt** · [ingevision.cloud](https://ingevision.cloud/?lang=en) · [LinkedIn](https://www.linkedin.com/in/anthony-hunt-3948a9196) · [GitHub profile](https://github.com/anthohunt)
+
 # nettoyage-serveur
 
 A cleanup agent for Linux servers that **only deletes what you have authorised**. You (or your AI assistant, with you present) take stock: the disk is organised by service and each item gets an instruction (keep, archive then delete, delete, empty every N days). A nightly pass applies this plan and nothing else, after archiving and verifying.
