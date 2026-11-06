@@ -1,5 +1,7 @@
 [English](README.md) · **Français**
 
+**Anthony Hunt** · [ingevision.cloud](https://ingevision.cloud/) · [LinkedIn](https://www.linkedin.com/in/anthony-hunt-3948a9196) · [Profil GitHub](https://github.com/anthohunt)
+
 # nettoyage-serveur
 
 Un agent de ménage pour serveur Linux qui **n'efface que ce que vous avez autorisé**. Vous (ou votre assistant IA, en votre présence) faites un état des lieux : le disque est rangé par service, chaque élément reçoit une consigne (garder, archiver puis effacer, supprimer, vider tous les N jours). Une passe de nuit applique seulement ce plan, après avoir archivé et vérifié.
